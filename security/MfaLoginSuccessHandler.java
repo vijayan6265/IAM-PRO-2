@@ -12,6 +12,8 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import com.zaalima.iam_server.service.RedisService;
+
 import java.io.IOException;
 
 @Component
@@ -20,12 +22,18 @@ public class MfaLoginSuccessHandler
 
     private final UserRepository userRepository;
 
+    private final RedisService redisService;
+
     private final SavedRequestAwareAuthenticationSuccessHandler
             savedRequestHandler =
             new SavedRequestAwareAuthenticationSuccessHandler();
 
-    public MfaLoginSuccessHandler(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public MfaLoginSuccessHandler(
+        UserRepository userRepository,
+        RedisService redisService) {
+
+    this.userRepository = userRepository;
+    this.redisService = redisService;
     }
 
     @Override
@@ -50,6 +58,11 @@ public class MfaLoginSuccessHandler
                     "MFA_USERNAME",
                     user.getUsername()
             );
+            redisService.save(
+             "MFA_PENDING:" + user.getUsername(),
+            "true",
+            300
+    );
 
             response.sendRedirect("/mfa/verify");
 
